@@ -2,23 +2,26 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>Nauka Matematyki</title>
+  <title>Test Matematyczny</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1>Ćwiczenia matematyczne</h1>
+    <h1>Test Matematyczny</h1>
+    <label for="operation">Wybierz działanie:</label>
     <select id="operation">
+      <option value="mix">Mieszane</option>
       <option value="add">Dodawanie</option>
       <option value="sub">Odejmowanie</option>
       <option value="mul">Mnożenie</option>
       <option value="div">Dzielenie</option>
     </select>
+    <button onclick="generateTest()">Rozpocznij test</button>
+    
+    <form id="test-form"></form>
 
-    <div id="question"></div>
-    <input type="number" id="answer" placeholder="Wpisz odpowiedź">
-    <button onclick="checkAnswer()">Sprawdź</button>
-    <p id="feedback"></p>
+    <button onclick="checkTest()" id="check-button" style="display:none;">Sprawdź test</button>
+    <div id="result"></div>
   </div>
 
   <script src="script.js"></script>
