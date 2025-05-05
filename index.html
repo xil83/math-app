@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Nauka Matematyki</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Ćwiczenia matematyczne</h1>
+    <select id="operation">
+      <option value="add">Dodawanie</option>
+      <option value="sub">Odejmowanie</option>
+      <option value="mul">Mnożenie</option>
+      <option value="div">Dzielenie</option>
+    </select>
+
+    <div id="question"></div>
+    <input type="number" id="answer" placeholder="Wpisz odpowiedź">
+    <button onclick="checkAnswer()">Sprawdź</button>
+    <p id="feedback"></p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
