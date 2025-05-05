@@ -1,48 +1,16 @@
-body {
-  font-family: Arial, sans-serif;
-  background-color: #fbeff2; /* pudrowy róż */
-  margin: 0;
-  padding: 20px;
-}
-
-.app-container {
-  display: flex;
-  gap: 40px;
-  align-items: flex-start;
-}
-
-.left-side {
-  flex: 3;
-}
-
-.right-side {
-  flex: 1;
-  font-size: 32px;
-  font-weight: bold;
-  text-align: center;
-  position: sticky;
-  top: 20px;
-}
-
 form.grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 kolumny */
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
   margin-top: 20px;
 }
 
 .question-cell {
-  background-color: #ffffff;
+  background-color: #f9f9f9;
   padding: 10px;
   border-radius: 8px;
   box-shadow: 0 0 4px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
-}
-
-.question-cell input {
-  width: 60px;
-  padding: 5px;
-  margin-top: 5px;
-  font-size: 16px;
+  align-items: flex-start;
 }
