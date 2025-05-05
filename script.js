@@ -124,7 +124,7 @@ function checkTest() {
     }
   });
 
-  const percent = (correct / 25) * 100;
+  const percent = (correct / 30) * 100;
   let grade;
 
   if (percent === 100) grade = 6;
