@@ -1,51 +1,109 @@
-let num1, num2, correctAnswer;
-generateQuestion();
+const form = document.getElementById("test-form");
+const resultDiv = document.getElementById("result");
+const checkButton = document.getElementById("check-button");
 
-document.getElementById("operation").addEventListener("change", generateQuestion);
+function generateTest() {
+  form.innerHTML = "";
+  resultDiv.innerHTML = "";
+  checkButton.style.display = "block";
 
-function generateQuestion() {
   const operation = document.getElementById("operation").value;
-  num1 = Math.floor(Math.random() * 10) + 1;
-  num2 = Math.floor(Math.random() * 10) + 1;
-  let question = "";
+  const questions = [];
 
-  switch (operation) {
-    case "add":
-      correctAnswer = num1 + num2;
-      question = `${num1} + ${num2} = ?`;
-      break;
-    case "sub":
-      [num1, num2] = [Math.max(num1, num2), Math.min(num1, num2)];
-      correctAnswer = num1 - num2;
-      question = `${num1} - ${num2} = ?`;
-      break;
-    case "mul":
-      correctAnswer = num1 * num2;
-      question = `${num1} × ${num2} = ?`;
-      break;
-    case "div":
-      correctAnswer = num1;
-      num1 = num1 * num2; // żeby dzielenie było całkowite
-      question = `${num1} ÷ ${num2} = ?`;
-      break;
+  for (let i = 0; i < 25; i++) {
+    let op = operation === "mix" ? getRandomOperation() : operation;
+    const isMissing = Math.random() < 0.5;
+    const question = generateQuestion(op, isMissing);
+    questions.push(question);
+
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <label>${i + 1}. ${question.text}</label>
+      <input type="number" name="q${i}" data-answer="${question.answer}" required><br><br>
+    `;
+    form.appendChild(div);
   }
-
-  document.getElementById("question").textContent = question;
-  document.getElementById("feedback").textContent = "";
-  document.getElementById("answer").value = "";
 }
 
-function checkAnswer() {
-  const userAnswer = parseInt(document.getElementById("answer").value);
-  const feedback = document.getElementById("feedback");
+function getRandomOperation() {
+  const ops = ["add", "sub", "mul", "div"];
+  return ops[Math.floor(Math.random() * ops.length)];
+}
 
-  if (userAnswer === correctAnswer) {
-    feedback.textContent = "Brawo! Dobrze!";
-    feedback.style.color = "green";
-  } else {
-    feedback.textContent = `Niestety, poprawna odpowiedź to ${correctAnswer}`;
-    feedback.style.color = "red";
+function generateQuestion(op, missing) {
+  let a = Math.floor(Math.random() * 10) + 1;
+  let b = Math.floor(Math.random() * 10) + 1;
+  let text = "", answer;
+
+  switch (op) {
+    case "add":
+      if (missing) {
+        answer = a;
+        text = `? + ${b} = ${a + b}`;
+      } else {
+        answer = a + b;
+        text = `${a} + ${b} = ?`;
+      }
+      break;
+    case "sub":
+      let max = Math.max(a, b), min = Math.min(a, b);
+      if (missing) {
+        answer = min;
+        text = `${max} - ? = ${max - min}`;
+      } else {
+        answer = max - min;
+        text = `${max} - ${min} = ?`;
+      }
+      break;
+    case "mul":
+      if (missing) {
+        answer = a;
+        text = `? × ${b} = ${a * b}`;
+      } else {
+        answer = a * b;
+        text = `${a} × ${b} = ?`;
+      }
+      break;
+    case "div":
+      let result = a;
+      a = a * b; // całkowite dzielenie
+      if (missing) {
+        answer = b;
+        text = `${a} ÷ ? = ${result}`;
+      } else {
+        answer = result;
+        text = `${a} ÷ ${b} = ?`;
+      }
+      break;
   }
 
-  setTimeout(generateQuestion, 2000);
+  return { text, answer };
+}
+
+function checkTest() {
+  let correct = 0;
+  const inputs = form.querySelectorAll("input");
+
+  inputs.forEach(input => {
+    const userAnswer = parseInt(input.value);
+    const correctAnswer = parseInt(input.dataset.answer);
+    if (userAnswer === correctAnswer) {
+      correct++;
+      input.style.borderColor = "green";
+    } else {
+      input.style.borderColor = "red";
+    }
+  });
+
+  const percent = (correct / 25) * 100;
+  let grade;
+
+  if (percent === 100) grade = 6;
+  else if (percent >= 90) grade = 5;
+  else if (percent >= 75) grade = 4;
+  else if (percent >= 60) grade = 3;
+  else if (percent >= 50) grade = 2;
+  else grade = 1;
+
+  resultDiv.innerHTML = `<h2>Poprawnych odpowiedzi: ${correct}/25 (${percent.toFixed(0)}%)<br>Ocena: <strong>${grade}</strong></h2>`;
 }
