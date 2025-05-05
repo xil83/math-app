@@ -2,6 +2,27 @@ const form = document.getElementById("test-form");
 const resultDiv = document.getElementById("result");
 const checkButton = document.getElementById("check-button");
 
+let timerInterval;
+function startTimer(duration = 600) {
+  clearInterval(timerInterval);
+  const timerEl = document.getElementById("timer");
+  let time = duration;
+
+  function updateTimer() {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    timerEl.textContent = `⏱ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    if (time <= 0) {
+      clearInterval(timerInterval);
+      timerEl.textContent = "⏱ Czas minął!";
+    }
+    time--;
+  }
+
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
 function generateTest() {
   form.innerHTML = "";
   resultDiv.innerHTML = "";
@@ -11,7 +32,7 @@ function generateTest() {
 
   form.classList.add("grid"); // dodajemy klasę siatki (patrz style.css)
 
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 30; i++) {
     let op = operation === "mix" ? getRandomOperation() : operation;
     const isMissing = Math.random() < 0.5;
     const question = generateQuestion(op, isMissing);
@@ -26,6 +47,7 @@ function generateTest() {
     `;
     form.appendChild(div);
   }
+startTimer();
 }
 
 function getRandomOperation() {
@@ -112,5 +134,5 @@ function checkTest() {
   else if (percent >= 50) grade = 2;
   else grade = 1;
 
-  resultDiv.innerHTML = `<h2>Poprawnych odpowiedzi: ${correct}/25 (${percent.toFixed(0)}%)<br>Ocena: <strong>${grade}</strong></h2>`;
+  resultDiv.innerHTML = `<h2>Poprawnych odpowiedzi: ${correct}/30 (${percent.toFixed(0)}%)<br>Ocena: <strong>${grade}</strong></h2>`;
 }
