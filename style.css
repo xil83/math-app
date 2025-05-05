@@ -27,22 +27,22 @@ body {
 form.grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* 3 kolumny */
-  gap: 15px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .question-cell {
   background-color: #ffffff;
-  padding: 10px;
-  border-radius: 8px;
+  padding: 5px;
+  border-radius: 5px;
   box-shadow: 0 0 4px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
 }
 
 .question-cell input {
-  width: 60px;
+  width: 40px;
   padding: 5px;
   margin-top: 5px;
-  font-size: 16px;
+  font-size: 12px;
 }
