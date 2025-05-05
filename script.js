@@ -8,18 +8,21 @@ function generateTest() {
   checkButton.style.display = "block";
 
   const operation = document.getElementById("operation").value;
-  const questions = [];
+
+  form.classList.add("grid"); // dodajemy klasę siatki (patrz style.css)
 
   for (let i = 0; i < 25; i++) {
     let op = operation === "mix" ? getRandomOperation() : operation;
     const isMissing = Math.random() < 0.5;
     const question = generateQuestion(op, isMissing);
-    questions.push(question);
 
     const div = document.createElement("div");
+    div.classList.add("question-cell");
+
     div.innerHTML = `
-      <label>${i + 1}. ${question.text}</label>
-      <input type="number" name="q${i}" data-answer="${question.answer}" required><br><br>
+      <span>${question.text}</span>
+      <input type="number" name="q${i}" data-answer="${question.answer}" required>
+      <span class="correction" style="display:none; color: red; margin-left: 10px;"></span>
     `;
     form.appendChild(div);
   }
@@ -66,7 +69,7 @@ function generateQuestion(op, missing) {
       break;
     case "div":
       let result = a;
-      a = a * b; // całkowite dzielenie
+      a = a * b;
       if (missing) {
         answer = b;
         text = `${a} ÷ ? = ${result}`;
@@ -87,11 +90,15 @@ function checkTest() {
   inputs.forEach(input => {
     const userAnswer = parseInt(input.value);
     const correctAnswer = parseInt(input.dataset.answer);
+    const correctionEl = input.nextElementSibling;
+
     if (userAnswer === correctAnswer) {
       correct++;
       input.style.borderColor = "green";
     } else {
       input.style.borderColor = "red";
+      correctionEl.style.display = "inline";
+      correctionEl.textContent = `Poprawna: ${correctAnswer}`;
     }
   });
 
