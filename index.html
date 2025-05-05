@@ -1,35 +1,375 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <title>Test Matematyczny</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Matematyczny dla Dzieci</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'powder-pink': '#fbeff2', // Nasz główny kolor tła
+                        'primary-action': '#e11d48', // Ciemniejszy róż dla akcentów/przycisków
+                        'primary-action-hover': '#be123c', // Ciemniejszy róż dla hover
+                        'correct': '#16a34a', // Zielony dla poprawnych
+                        'incorrect': '#dc2626', // Czerwony dla błędnych
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Ukrycie strzałek w polach numerycznych dla czystszego wyglądu */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield; /* Firefox */
+        }
+        /* Podstawowe style dla body, aby zapewnić tło i font */
+        body {
+            font-family: 'Inter', sans-serif; /* Użycie fontu Inter, jeśli dostępny */
+        }
+        /* Styl dla siatki pytań */
+        #test-form {
+            /* Domyślnie 2 kolumny na małych ekranach */
+            grid-template-columns: repeat(2, 1fr);
+        }
+        /* 3 kolumny na tabletach */
+        @media (min-width: 640px) {
+            #test-form {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        /* 5 kolumn na większych ekranach */
+        @media (min-width: 1024px) {
+            #test-form {
+                grid-template-columns: repeat(5, 1fr); /* 5 kolumn dla 30 pytań */
+            }
+        }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body>
-  <div class="app-container">
-    <div class="left-side">
-      <h1>Test z matematyki</h1>
+<body class="bg-powder-pink">
 
-      <label for="operation">Wybierz działanie:</label>
-      <select id="operation">
-        <option value="mix">Mieszane</option>
-        <option value="add">Dodawanie</option>
-        <option value="sub">Odejmowanie</option>
-        <option value="mul">Mnożenie</option>
-        <option value="div">Dzielenie</option>
-        
-      </select>
-      <button onclick="generateTest()">Rozpocznij test</button>
+    <div class="container mx-auto p-4 md:p-8 min-h-screen flex flex-col md:flex-row gap-8">
 
-      <form id="test-form" class="grid"></form>
-      <button id="check-button" onclick="checkTest()" style="display:none;">Sprawdź test</button>
-      <div id="result"></div>
+        <div class="w-full md:w-3/4">
+            <h1 class="text-2xl md:text-3xl font-bold mb-4 text-primary-action">Test z matematyki</h1>
+
+            <div class="flex items-center gap-4 mb-6">
+                <label for="operation" class="font-semibold">Wybierz działanie:</label>
+                <select id="operation" class="p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-action focus:border-transparent">
+                    <option value="mix">Mieszane</option>
+                    <option value="add">Dodawanie</option>
+                    <option value="sub">Odejmowanie</option>
+                    <option value="mul">Mnożenie</option>
+                    <option value="div">Dzielenie</option>
+                </select>
+                <button id="generate-button" class="bg-primary-action hover:bg-primary-action-hover text-white font-bold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">Rozpocznij test</button>
+            </div>
+
+            <form id="test-form" class="grid gap-3 md:gap-4"></form>
+
+            <button id="check-button" class="hidden mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out">Sprawdź test</button>
+        </div>
+
+        <div class="w-full md:w-1/4 md:sticky md:top-8 self-start">
+             <div id="timer" class="text-3xl md:text-4xl font-bold text-center text-primary-action mb-6 p-4 bg-white rounded-lg shadow">
+                ⏱ --:--
+            </div>
+             <div id="result" class="text-center p-4 bg-white rounded-lg shadow">
+                </div>
+        </div>
     </div>
 
-    <div class="right-side">
-      <div id="timer">⏱ xx:00</div>
-    </div>
-  </div>
+    <script>
+        // Pobranie elementów DOM
+        const form = document.getElementById("test-form");
+        const resultDiv = document.getElementById("result");
+        const checkButton = document.getElementById("check-button");
+        const timerEl = document.getElementById("timer");
+        const generateButton = document.getElementById("generate-button");
+        const operationSelect = document.getElementById("operation");
 
-  <script src="script.js"></script>
+        let timerInterval; // Zmienna do przechowywania interwału timera
+        const TOTAL_QUESTIONS = 30; // Stała liczba pytań
+
+        /**
+         * Uruchamia lub resetuje timer odliczający czas na rozwiązanie testu.
+         * @param {number} [duration=300] - Czas trwania w sekundach (domyślnie 5 minut).
+         */
+        function startTimer(duration = 300) {
+            clearInterval(timerInterval); // Wyczyszczenie poprzedniego interwału
+            let time = duration;
+
+            function updateTimer() {
+                const minutes = Math.floor(time / 60);
+                const seconds = time % 60;
+                // Aktualizacja wyświetlanego czasu
+                timerEl.textContent = `⏱ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                // Sprawdzenie, czy czas się skończył
+                if (time < 0) { // Zmieniono warunek na time < 0
+                    clearInterval(timerInterval);
+                    timerEl.textContent = "⏱ Czas minął!";
+                    checkButton.disabled = true; // Wyłącz przycisk sprawdzania
+                    // Opcjonalnie: automatyczne sprawdzenie po czasie
+                    // checkTest();
+                }
+                time--; // Zmniejszenie pozostałego czasu
+            }
+
+            updateTimer(); // Natychmiastowe wywołanie
+            timerInterval = setInterval(updateTimer, 1000); // Interwał co sekundę
+        }
+
+        /**
+         * Generuje nowy test matematyczny na podstawie wybranej operacji.
+         */
+        function generateTest() {
+            form.innerHTML = ""; // Wyczyszczenie poprzednich pytań
+            resultDiv.innerHTML = ""; // Wyczyszczenie poprzednich wyników
+            checkButton.classList.remove('hidden'); // Pokazanie przycisku sprawdzania
+            checkButton.disabled = false; // Upewnienie się, że przycisk jest aktywny
+
+            const operation = operationSelect.value; // Pobranie wybranej operacji
+
+            // Wygenerowanie DOKŁADNIE 30 pytań
+            for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+                let op = operation === "mix" ? getRandomOperation() : operation;
+                const isMissing = Math.random() < 0.5;
+                const question = generateQuestion(op, isMissing);
+
+                // Utworzenie elementu div dla pytania z klasami Tailwind
+                const div = document.createElement("div");
+                div.className = "bg-white p-3 rounded-lg shadow flex flex-col items-center text-sm"; // Klasy dla komórki
+
+                // Ustawienie zawartości HTML dla komórki pytania
+                div.innerHTML = `
+                  <span class="font-semibold text-gray-700 mb-1">${question.text}</span>
+                  <input type="number" name="q${i}" data-answer="${question.answer}" required
+                         class="mt-1 p-1 border border-gray-300 rounded w-16 text-center focus:outline-none focus:ring-1 focus:ring-primary-action focus:border-transparent">
+                  <span class="correction h-4 text-xs mt-1 text-incorrect font-medium" style="display:none;"></span>
+                `; // Dodano h-4 dla stałej wysokości miejsca na korektę
+                form.appendChild(div); // Dodanie komórki do formularza
+            }
+            startTimer(); // Rozpoczęcie odliczania czasu
+        }
+
+        /**
+         * Zwraca losową operację matematyczną ('add', 'sub', 'mul', 'div').
+         * @returns {string} Nazwa losowej operacji.
+         */
+        function getRandomOperation() {
+            const ops = ["add", "sub", "mul", "div"];
+            return ops[Math.floor(Math.random() * ops.length)];
+        }
+
+       /**
+         * Generuje pojedyncze pytanie matematyczne.
+         * Logika: Jedna liczba mała (1-10), druga duża (0-100), wynik <= 100 dla dodawania.
+         * Dla odejmowania: min lub różnica jest mała (1-10).
+         * @param {string} op - Typ operacji ('add', 'sub', 'mul', 'div').
+         * @param {boolean} missing - Czy odpowiedź ma być brakującym składnikiem działania.
+         * @returns {{text: string, answer: number}} Obiekt zawierający tekst pytania i poprawną odpowiedź.
+         */
+        function generateQuestion(op, missing) {
+            let a, b, result, text, answer, max, min, smallNum, largeNum;
+
+            switch (op) {
+                case "add":
+                    // Jedna liczba mała (1-10), druga duża (0 do 100-mała)
+                    smallNum = Math.floor(Math.random() * 10) + 1; // 1 to 10
+                    largeNum = Math.floor(Math.random() * (101 - smallNum)); // 0 to 100-smallNum
+
+                    if (Math.random() < 0.5) {
+                        a = largeNum;
+                        b = smallNum;
+                    } else {
+                        a = smallNum;
+                        b = largeNum;
+                    }
+                    result = a + b; // Gwarantowany wynik <= 100
+
+                    if (missing && Math.random() < 0.5) { // Brakuje 'a'
+                        answer = a;
+                        text = `? + ${b} = ${result}`;
+                    } else if (missing) { // Brakuje 'b'
+                        answer = b;
+                        text = `${a} + ? = ${result}`;
+                    } else { // Brakuje wyniku
+                        answer = result;
+                        text = `${a} + ${b} = ?`;
+                    }
+                    break;
+
+                case "sub":
+                    // Wymuszamy, aby min LUB result było małe (1-10)
+                    if (Math.random() < 0.5) {
+                        // Wymuś mały odjemnik (min)
+                        min = Math.floor(Math.random() * 10) + 1; // 1 to 10
+                        // max musi być >= min i <= 100
+                        max = Math.floor(Math.random() * (101 - min)) + min; // min to 100
+                    } else {
+                        // Wymuś małą różnicę (result)
+                        result = Math.floor(Math.random() * 10) + 1; // 1 to 10
+                        // min może być od 0 do 100-result
+                        min = Math.floor(Math.random() * (101 - result)); // 0 to 100-result
+                        max = min + result; // max <= 100
+                    }
+                    result = max - min; // Oblicz poprawny wynik
+
+                    if (missing && Math.random() < 0.5) { // Brakuje odjemnika (min)
+                        answer = min;
+                        text = `${max} - ? = ${result}`;
+                    } else if (missing) { // Brakuje odjemnej (max)
+                        answer = max;
+                        text = `? - ${min} = ${result}`;
+                    } else { // Brakuje wyniku (różnicy)
+                        answer = result;
+                        text = `${max} - ${min} = ?`;
+                    }
+                    break;
+
+                case "mul":
+                    // Mnożenie - małe liczby (0-10)
+                    a = Math.floor(Math.random() * 11);
+                    b = Math.floor(Math.random() * 11);
+                    result = a * b;
+
+                    if (missing && Math.random() < 0.5) { // Brakuje 'a'
+                        answer = a;
+                        if (b === 0 && result === 0) { // Unikaj ? * 0 = 0
+                            b = Math.floor(Math.random() * 10) + 1; // Losuj b od 1 do 10
+                            a = Math.floor(Math.random() * 11); // Ponownie losuj a, aby pasowało
+                            result = a * b;
+                        }
+                        text = `? × ${b} = ${result}`;
+                    } else if (missing) { // Brakuje 'b'
+                        answer = b;
+                        if (a === 0 && result === 0) { // Unikaj 0 * ? = 0
+                            a = Math.floor(Math.random() * 10) + 1; // Losuj a od 1 do 10
+                            b = Math.floor(Math.random() * 11); // Ponownie losuj b
+                            result = a * b;
+                        }
+                        text = `${a} × ? = ${result}`;
+                    } else { // Brakuje wyniku
+                        answer = result;
+                        text = `${a} × ${b} = ?`;
+                    }
+                    break;
+
+                case "div":
+                    // Dzielenie - wynik całkowity, małe liczby
+                    b = Math.floor(Math.random() * 10) + 1; // Dzielnik (b) od 1 do 10
+                    result = Math.floor(Math.random() * 11); // Wynik (iloraz) od 0 do 10
+                    a = b * result; // Dzielna (a)
+
+                    if (missing && Math.random() < 0.5) { // Brakuje dzielnika (b)
+                        answer = b;
+                        text = `${a} ÷ ? = ${result}`;
+                    } else if (missing) { // Brakuje dzielnej (a)
+                        answer = a;
+                        text = `? ÷ ${b} = ${result}`;
+                    } else { // Brakuje wyniku (ilorazu)
+                        answer = result;
+                        text = `${a} ÷ ${b} = ?`;
+                    }
+                    break;
+            }
+
+            // Zapewnienie, że tekst pytania nie jest pusty (na wszelki wypadek)
+            if (!text) {
+                console.error("Wygenerowano puste pytanie dla:", {op, missing, a, b, result, max, min});
+                // Awaryjne pytanie
+                a = 1; b = 1; result = a + b; op = 'add'; missing = false;
+                text = `${a} + ${b} = ?`;
+                answer = result;
+            }
+
+
+            return { text, answer }; // Zwrócenie tekstu pytania i odpowiedzi
+        }
+
+        /**
+         * Sprawdza odpowiedzi użytkownika, oznacza poprawne/błędne i wyświetla wynik.
+         */
+        function checkTest() {
+            clearInterval(timerInterval); // Zatrzymanie timera
+            checkButton.disabled = true; // Wyłączenie przycisku sprawdzania
+
+            let correct = 0; // Licznik poprawnych odpowiedzi
+            const inputs = form.querySelectorAll("input[type=number]"); // Pobranie wszystkich pól input
+
+            inputs.forEach(input => {
+                const userAnswerStr = input.value;
+                const correctAnswer = parseInt(input.dataset.answer);
+                const correctionEl = input.nextElementSibling; // Span dla korekty
+
+                input.disabled = true; // Wyłączenie pola po sprawdzeniu
+
+                // Sprawdzenie, czy odpowiedź jest liczbą i czy jest poprawna
+                let isCorrect = false;
+                if (userAnswerStr !== "" && !isNaN(parseInt(userAnswerStr))) {
+                    if (parseInt(userAnswerStr) === correctAnswer) {
+                        isCorrect = true;
+                    }
+                }
+
+                if (isCorrect) {
+                    correct++;
+                    input.classList.remove('border-gray-300', 'border-incorrect');
+                    input.classList.add('border-correct', 'border-2'); // Zielona ramka
+                    correctionEl.style.display = "none"; // Ukryj korektę
+                } else {
+                    input.classList.remove('border-gray-300', 'border-correct');
+                    input.classList.add('border-incorrect', 'border-2'); // Czerwona ramka
+                    correctionEl.style.display = "inline"; // Pokaż korektę
+                    if (userAnswerStr === "") {
+                         correctionEl.textContent = `Brak odp. (${correctAnswer})`;
+                    } else {
+                         correctionEl.textContent = `Poprawna: ${correctAnswer}`;
+                    }
+                }
+            });
+
+            // Obliczenie procentu i oceny
+            const totalQuestions = inputs.length;
+            const percent = totalQuestions > 0 ? (correct / totalQuestions) * 100 : 0;
+            let grade;
+
+            // Ustalenie oceny
+            if (percent >= 95) grade = 6;
+            else if (percent >= 85) grade = 5;
+            else if (percent >= 70) grade = 4;
+            else if (percent >= 55) grade = 3;
+            else if (percent >= 40) grade = 2;
+            else grade = 1;
+
+            // Wyświetlenie wyniku końcowego w prawym panelu
+            resultDiv.innerHTML = `
+                <h2 class="text-xl font-bold mb-2">Wynik Testu</h2>
+                <p>Poprawnych odpowiedzi: <strong class="text-correct">${correct}</strong>/${totalQuestions}</p>
+                <p>Procentowo: <strong>${percent.toFixed(0)}%</strong></p>
+                <p class="mt-2">Ocena: <strong class="text-2xl text-primary-action">${grade}</strong></p>
+            `;
+        }
+
+        // Dodanie nasłuchiwaczy zdarzeń do przycisków
+        generateButton.addEventListener('click', generateTest);
+        checkButton.addEventListener('click', checkTest);
+
+        // Opcjonalnie: Wygeneruj test od razu po załadowaniu strony
+        // generateTest();
+
+    </script>
+
 </body>
+</html>
