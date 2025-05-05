@@ -3,7 +3,7 @@ const resultDiv = document.getElementById("result");
 const checkButton = document.getElementById("check-button");
 
 let timerInterval;
-function startTimer(duration = 600) {
+function startTimer(duration = 300) {
   clearInterval(timerInterval);
   const timerEl = document.getElementById("timer");
   let time = duration;
