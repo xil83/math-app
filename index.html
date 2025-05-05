@@ -105,7 +105,7 @@
          * Uruchamia lub resetuje timer odliczający czas na rozwiązanie testu.
          * @param {number} [duration=300] - Czas trwania w sekundach (domyślnie 5 minut).
          */
-        function startTimer(duration = 300) {
+        function startTimer(duration = 600) {
             clearInterval(timerInterval); // Wyczyszczenie poprzedniego interwału
             let time = duration;
 
@@ -350,7 +350,7 @@
             else if (percent >= 85) grade = 5;
             else if (percent >= 70) grade = 4;
             else if (percent >= 55) grade = 3;
-            else if (percent >= 40) grade = 2;
+            else if (percent >= 45) grade = 2;
             else grade = 1;
 
             // Wyświetlenie wyniku końcowego w prawym panelu
