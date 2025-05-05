@@ -1,29 +1,27 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <title>Test Matematyczny</title>
-  <link rel="stylesheet" href="style.css">
-</head>
 <body>
-  <div class="container">
-    <h1>Test Matematyczny</h1>
-    <label for="operation">Wybierz działanie:</label>
-    <select id="operation">
-      <option value="mix">Mieszane</option>
-      <option value="add">Dodawanie</option>
-      <option value="sub">Odejmowanie</option>
-      <option value="mul">Mnożenie</option>
-      <option value="div">Dzielenie</option>
-    </select>
-    <button onclick="generateTest()">Rozpocznij test</button>
-    
-    <form id="test-form"></form>
+  <div class="app-container">
+    <div class="left-side">
+      <h1>Test z matematyki</h1>
 
-    <button onclick="checkTest()" id="check-button" style="display:none;">Sprawdź test</button>
-    <div id="result"></div>
+      <label for="operation">Wybierz działanie:</label>
+      <select id="operation">
+        <option value="add">Dodawanie</option>
+        <option value="sub">Odejmowanie</option>
+        <option value="mul">Mnożenie</option>
+        <option value="div">Dzielenie</option>
+        <option value="mix">Mieszane</option>
+      </select>
+      <button onclick="generateTest()">Rozpocznij test</button>
+
+      <form id="test-form" class="grid"></form>
+      <button id="check-button" onclick="checkTest()" style="display:none;">Sprawdź test</button>
+      <div id="result"></div>
+    </div>
+
+    <div class="right-side">
+      <div id="timer">⏱ 10:00</div>
+    </div>
   </div>
 
   <script src="script.js"></script>
 </body>
-</html>
