@@ -79,7 +79,13 @@
 
             <button id="check-button" class="hidden mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out">Sprawdź test</button>
         </div>
-
+        <div class="w-full md:w-1/4 md:sticky md:top-8 self-start">
+             <div id="timer" class="text-3xl md:text-4xl font-bold text-center text-primary-action mb-6 p-4 bg-white rounded-lg shadow">
+                ⏱ --:--
+            </div>
+             <div id="result" class="text-center p-4 bg-white rounded-lg shadow">
+                </div>
+        </div>
 
     </div>
 
@@ -115,7 +121,7 @@
                     timerEl.textContent = "⏱ Czas minął!";
                     checkButton.disabled = true; // Wyłącz przycisk sprawdzania
                     // Opcjonalnie: automatyczne sprawdzenie po czasie
-                    // checkTest();
+                     checkTest();
                 }
                 time--; // Zmniejszenie pozostałego czasu
             }
@@ -154,7 +160,7 @@
                 `; // Dodano h-4 dla stałej wysokości miejsca na korektę
                 form.appendChild(div); // Dodanie komórki do formularza
             }
-            startTimer(); // Rozpoczęcie odliczania czasu
+            //startTimer(); // Rozpoczęcie odliczania czasu
         }
 
         /**
