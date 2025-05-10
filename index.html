@@ -10,49 +10,50 @@
             theme: {
                 extend: {
                     colors: {
-                        'powder-pink': '#fbeff2', // Nasz główny kolor tła
-                        'primary-action': '#e11d48', // Ciemniejszy róż dla akcentów/przycisków
-                        'primary-action-hover': '#be123c', // Ciemniejszy róż dla hover
-                        'correct': '#16a34a', // Zielony dla poprawnych
-                        'incorrect': '#dc2626', // Czerwony dla błędnych
+                        'powder-pink': '#fbeff2',
+                        'primary-action': '#e11d48',
+                        'primary-action-hover': '#be123c',
+                        'correct': '#16a34a',
+                        'incorrect': '#dc2626',
+                        'timer-button': '#f3f4f6', // Jasnoszary dla przycisków timera
+                        'timer-button-hover': '#e5e7eb', // Ciemniejszy szary dla hover
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Ukrycie strzałek w polach numerycznych dla czystszego wyglądu */
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
         input[type=number] {
-            -moz-appearance: textfield; /* Firefox */
+            -moz-appearance: textfield;
         }
-        /* Podstawowe style dla body, aby zapewnić tło i font */
         body {
-            font-family: 'Inter', sans-serif; /* Użycie fontu Inter, jeśli dostępny */
+            font-family: 'Inter', sans-serif;
         }
-        /* Styl dla siatki pytań */
         #test-form {
-            /* Domyślnie 2 kolumny na małych ekranach */
             grid-template-columns: repeat(2, 1fr);
         }
-        /* 3 kolumny na tabletach */
         @media (min-width: 640px) {
             #test-form {
                 grid-template-columns: repeat(3, 1fr);
             }
         }
-        /* 5 kolumn na większych ekranach */
         @media (min-width: 1024px) {
             #test-form {
-                grid-template-columns: repeat(5, 1fr); /* 5 kolumn dla 30 pytań */
+                grid-template-columns: repeat(5, 1fr);
             }
         }
+        /* Styl dla aktywnego przycisku czasu */
+        .timer-set-button.active {
+            background-color: #e11d48; /* primary-action */
+            color: white;
+        }
     </style>
-     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -79,14 +80,25 @@
 
             <button id="check-button" class="hidden mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow transition duration-150 ease-in-out">Sprawdź test</button>
         </div>
+
         <div class="w-full md:w-1/4 md:sticky md:top-8 self-start">
-             <div id="timer" class="text-3xl md:text-4xl font-bold text-center text-primary-action mb-6 p-4 bg-white rounded-lg shadow">
-                ⏱ --:--
+            <div class="p-4 bg-white rounded-lg shadow mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <label for="timer-toggle" class="font-semibold text-gray-700">Timer:</label>
+                    <input type="checkbox" id="timer-toggle" class="form-checkbox h-5 w-5 text-primary-action rounded focus:ring-primary-action">
+                </div>
+                <div id="timer-display-container" class="text-3xl md:text-4xl font-bold text-center text-primary-action mb-4">
+                     <span id="timer-value">⏱ Wyłączony</span>
+                </div>
+                <div id="timer-buttons" class="flex justify-around gap-2">
+                    <button data-time="300" class="timer-set-button flex-1 bg-timer-button hover:bg-timer-button-hover text-gray-700 font-semibold py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out">5 min</button>
+                    <button data-time="600" class="timer-set-button flex-1 bg-timer-button hover:bg-timer-button-hover text-gray-700 font-semibold py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out active">10 min</button>
+                    <button data-time="900" class="timer-set-button flex-1 bg-timer-button hover:bg-timer-button-hover text-gray-700 font-semibold py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out">15 min</button>
+                </div>
             </div>
-             <div id="result" class="text-center p-4 bg-white rounded-lg shadow">
+            <div id="result" class="text-center p-4 bg-white rounded-lg shadow">
                 </div>
         </div>
-
     </div>
 
     <script>
@@ -94,266 +106,258 @@
         const form = document.getElementById("test-form");
         const resultDiv = document.getElementById("result");
         const checkButton = document.getElementById("check-button");
-        const timerEl = document.getElementById("timer");
+        const timerValueEl = document.getElementById("timer-value"); // Zmieniono ID dla samego tekstu timera
         const generateButton = document.getElementById("generate-button");
         const operationSelect = document.getElementById("operation");
+        const timerToggle = document.getElementById("timer-toggle");
+        const timerButtonsContainer = document.getElementById("timer-buttons");
 
-        let timerInterval; // Zmienna do przechowywania interwału timera
-        const TOTAL_QUESTIONS = 30; // Stała liczba pytań
+        let timerInterval;
+        const TOTAL_QUESTIONS = 30;
+        let isTimerEnabled = false; // Domyślnie timer wyłączony
+        let currentTimerDuration = 600; // Domyślny czas to 10 minut (600s)
+
+        /**
+         * Aktualizuje wygląd przycisków wyboru czasu, podświetlając aktywny.
+         */
+        function updateTimerSetButtonsUI() {
+            const buttons = timerButtonsContainer.querySelectorAll('.timer-set-button');
+            buttons.forEach(button => {
+                if (parseInt(button.dataset.time) === currentTimerDuration) {
+                    button.classList.add('active');
+                    button.classList.remove('bg-timer-button', 'text-gray-700');
+                } else {
+                    button.classList.remove('active');
+                    button.classList.add('bg-timer-button', 'text-gray-700');
+                }
+            });
+        }
+
 
         /**
          * Uruchamia lub resetuje timer odliczający czas na rozwiązanie testu.
-         * @param {number} [duration=300] - Czas trwania w sekundach (domyślnie 5 minut).
+         * @param {number} duration - Czas trwania w sekundach.
          */
-        function startTimer(duration = 6000) {
-            clearInterval(timerInterval); // Wyczyszczenie poprzedniego interwału
-            let time = duration;
-
-            function updateTimer() {
-                const minutes = Math.floor(time / 60);
-                const seconds = time % 60;
-                // Aktualizacja wyświetlanego czasu
-                timerEl.textContent = `⏱ ${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-                // Sprawdzenie, czy czas się skończył
-                if (time < 0) { // Zmieniono warunek na time < 0
-                    clearInterval(timerInterval);
-                    timerEl.textContent = "⏱ Czas minął!";
-                    checkButton.disabled = true; // Wyłącz przycisk sprawdzania
-                    // Opcjonalnie: automatyczne sprawdzenie po czasie
-                     checkTest();
-                }
-                time--; // Zmniejszenie pozostałego czasu
+        function startTimer(duration) {
+            if (!isTimerEnabled) {
+                timerValueEl.textContent = "⏱ Wyłączony";
+                clearInterval(timerInterval);
+                return;
             }
 
-            updateTimer(); // Natychmiastowe wywołanie
-            timerInterval = setInterval(updateTimer, 1000); // Interwał co sekundę
+            clearInterval(timerInterval); // Wyczyszczenie poprzedniego interwału
+            let time = duration;
+            currentTimerDuration = duration; // Zapisz aktualnie używany czas
+            updateTimerSetButtonsUI(); // Zaktualizuj podświetlenie przycisku
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(time / 60);
+                const seconds = time % 60;
+                timerValueEl.textContent = `⏱ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (time < 0) {
+                    clearInterval(timerInterval);
+                    timerValueEl.textContent = "⏱ Czas minął!";
+                    if (checkButton && !checkButton.disabled) {
+                        // Można dodać automatyczne sprawdzanie, jeśli jest taka potrzeba
+                        // checkTest();
+                    }
+                    if(checkButton) checkButton.disabled = true;
+                }
+                time--;
+            }
+
+            updateTimerDisplay();
+            timerInterval = setInterval(updateTimerDisplay, 1000);
         }
 
         /**
-         * Generuje nowy test matematyczny na podstawie wybranej operacji.
+         * Obsługa przełącznika timera.
+         */
+        timerToggle.addEventListener('change', function() {
+            isTimerEnabled = this.checked;
+            if (isTimerEnabled) {
+                startTimer(currentTimerDuration); // Uruchom z ostatnio wybranym lub domyślnym czasem
+            } else {
+                clearInterval(timerInterval);
+                timerValueEl.textContent = "⏱ Wyłączony";
+            }
+        });
+
+        /**
+         * Obsługa przycisków ustawiania czasu timera.
+         */
+        timerButtonsContainer.addEventListener('click', function(event) {
+            if (event.target.classList.contains('timer-set-button')) {
+                const time = parseInt(event.target.dataset.time);
+                currentTimerDuration = time;
+                isTimerEnabled = true; // Automatycznie włącz timer po kliknięciu przycisku czasu
+                timerToggle.checked = true;
+                startTimer(currentTimerDuration);
+            }
+        });
+
+
+        /**
+         * Generuje nowy test matematyczny.
          */
         function generateTest() {
-            form.innerHTML = ""; // Wyczyszczenie poprzednich pytań
-            resultDiv.innerHTML = ""; // Wyczyszczenie poprzednich wyników
-            checkButton.classList.remove('hidden'); // Pokazanie przycisku sprawdzania
-            checkButton.disabled = false; // Upewnienie się, że przycisk jest aktywny
+            form.innerHTML = "";
+            resultDiv.innerHTML = "";
+            if(checkButton) {
+                checkButton.classList.remove('hidden');
+                checkButton.disabled = false;
+            }
 
-            const operation = operationSelect.value; // Pobranie wybranej operacji
 
-            // Wygenerowanie DOKŁADNIE 30 pytań
+            const operation = operationSelect.value;
+
             for (let i = 0; i < TOTAL_QUESTIONS; i++) {
                 let op = operation === "mix" ? getRandomOperation() : operation;
                 const isMissing = Math.random() < 0.5;
                 const question = generateQuestion(op, isMissing);
 
-                // Utworzenie elementu div dla pytania z klasami Tailwind
                 const div = document.createElement("div");
-                div.className = "bg-white p-3 rounded-lg shadow flex flex-col items-center text-sm"; // Klasy dla komórki
-
-                // Ustawienie zawartości HTML dla komórki pytania
+                div.className = "bg-white p-3 rounded-lg shadow flex flex-col items-center text-sm";
                 div.innerHTML = `
                   <span class="font-semibold text-gray-700 mb-1">${question.text}</span>
                   <input type="number" name="q${i}" data-answer="${question.answer}" required
                          class="mt-1 p-1 border border-gray-300 rounded w-16 text-center focus:outline-none focus:ring-1 focus:ring-primary-action focus:border-transparent">
                   <span class="correction h-4 text-xs mt-1 text-incorrect font-medium" style="display:none;"></span>
-                `; // Dodano h-4 dla stałej wysokości miejsca na korektę
-                form.appendChild(div); // Dodanie komórki do formularza
+                `;
+                form.appendChild(div);
             }
-            //startTimer(); // Rozpoczęcie odliczania czasu
+
+            if (isTimerEnabled) {
+                startTimer(currentTimerDuration); // Uruchom timer, jeśli jest włączony
+            } else {
+                timerValueEl.textContent = "⏱ Wyłączony"; // Upewnij się, że jest wyłączony
+                clearInterval(timerInterval);
+            }
         }
 
-        /**
-         * Zwraca losową operację matematyczną ('add', 'sub', 'mul', 'div').
-         * @returns {string} Nazwa losowej operacji.
-         */
         function getRandomOperation() {
             const ops = ["add", "sub", "mul", "div"];
             return ops[Math.floor(Math.random() * ops.length)];
         }
 
-       /**
-         * Generuje pojedyncze pytanie matematyczne.
-         * Logika: Jedna liczba mała (1-10), druga duża (0-100), wynik <= 100 dla dodawania.
-         * Dla odejmowania: min lub różnica jest mała (1-10).
-         * @param {string} op - Typ operacji ('add', 'sub', 'mul', 'div').
-         * @param {boolean} missing - Czy odpowiedź ma być brakującym składnikiem działania.
-         * @returns {{text: string, answer: number}} Obiekt zawierający tekst pytania i poprawną odpowiedź.
-         */
         function generateQuestion(op, missing) {
             let a, b, result, text, answer, max, min, smallNum, largeNum;
+            let num_a, num_b, display_a, display_b, current_result;
 
             switch (op) {
                 case "add":
-                    // Jedna liczba mała (1-10), druga duża (0 do 100-mała)
-                    smallNum = Math.floor(Math.random() * 10) + 1; // 1 to 10
-                    largeNum = Math.floor(Math.random() * (101 - smallNum)); // 0 to 100-smallNum
-
-                    if (Math.random() < 0.5) {
-                        a = largeNum;
-                        b = smallNum;
-                    } else {
-                        a = smallNum;
-                        b = largeNum;
-                    }
-                    result = a + b; // Gwarantowany wynik <= 100
-
-                    if (missing && Math.random() < 0.5) { // Brakuje 'a'
-                        answer = a;
-                        text = `? + ${b} = ${result}`;
-                    } else if (missing) { // Brakuje 'b'
-                        answer = b;
-                        text = `${a} + ? = ${result}`;
-                    } else { // Brakuje wyniku
-                        answer = result;
-                        text = `${a} + ${b} = ?`;
-                    }
+                    smallNum = Math.floor(Math.random() * 10) + 1;
+                    largeNum = Math.floor(Math.random() * (101 - smallNum));
+                    if (Math.random() < 0.5) { a = largeNum; b = smallNum; } else { a = smallNum; b = largeNum; }
+                    result = a + b;
+                    if (missing && Math.random() < 0.5) { answer = a; text = `? + ${b} = ${result}`; }
+                    else if (missing) { answer = b; text = `${a} + ? = ${result}`; }
+                    else { answer = result; text = `${a} + ${b} = ?`; }
                     break;
-
                 case "sub":
-                    // Wymuszamy, aby min LUB result było małe (1-10)
                     if (Math.random() < 0.5) {
-                        // Wymuś mały odjemnik (min)
-                        min = Math.floor(Math.random() * 10) + 1; // 1 to 10
-                        // max musi być >= min i <= 100
-                        max = Math.floor(Math.random() * (101 - min)) + min; // min to 100
+                        min = Math.floor(Math.random() * 10) + 1;
+                        max = Math.floor(Math.random() * (101 - min)) + min;
                     } else {
-                        // Wymuś małą różnicę (result)
-                        result = Math.floor(Math.random() * 10) + 1; // 1 to 10
-                        // min może być od 0 do 100-result
-                        min = Math.floor(Math.random() * (101 - result)); // 0 to 100-result
-                        max = min + result; // max <= 100
+                        result = Math.floor(Math.random() * 10) + 1;
+                        min = Math.floor(Math.random() * (101 - result));
+                        max = min + result;
                     }
-                    result = max - min; // Oblicz poprawny wynik
-
-                    if (missing && Math.random() < 0.5) { // Brakuje odjemnika (min)
-                        answer = min;
-                        text = `${max} - ? = ${result}`;
-                    } else if (missing) { // Brakuje odjemnej (max)
-                        answer = max;
-                        text = `? - ${min} = ${result}`;
-                    } else { // Brakuje wyniku (różnicy)
-                        answer = result;
-                        text = `${max} - ${min} = ?`;
-                    }
+                    result = max - min;
+                    if (missing && Math.random() < 0.5) { answer = min; text = `${max} - ? = ${result}`; }
+                    else if (missing) { answer = max; text = `? - ${min} = ${result}`; }
+                    else { answer = result; text = `${max} - ${min} = ?`; }
                     break;
-
                 case "mul":
-                    // Mnożenie - małe liczby (0-10)
-                    a = Math.floor(Math.random() * 11);
-                    b = Math.floor(Math.random() * 11);
-                    result = a * b;
-
-                    if (missing && Math.random() < 0.5) { // Brakuje 'a'
-                        answer = a;
-                        if (b === 0 && result === 0) { // Unikaj ? * 0 = 0
-                            b = Math.floor(Math.random() * 10) + 1; // Losuj b od 1 do 10
-                            a = Math.floor(Math.random() * 11); // Ponownie losuj a, aby pasowało
-                            result = a * b;
+                    num_a = Math.floor(Math.random() * 11);
+                    num_b = Math.floor(Math.random() * 11);
+                    if (missing && Math.random() < 0.5) {
+                        display_b = num_b;
+                        if (num_a === 0 && display_b === 0) {
+                            display_b = Math.floor(Math.random() * 10) + 1;
                         }
-                        text = `? × ${b} = ${result}`;
-                    } else if (missing) { // Brakuje 'b'
-                        answer = b;
-                        if (a === 0 && result === 0) { // Unikaj 0 * ? = 0
-                            a = Math.floor(Math.random() * 10) + 1; // Losuj a od 1 do 10
-                            b = Math.floor(Math.random() * 11); // Ponownie losuj b
-                            result = a * b;
+                        current_result = num_a * display_b;
+                        answer = num_a;
+                        text = `? × ${display_b} = ${current_result}`;
+                    } else if (missing) {
+                        display_a = num_a;
+                        if (display_a === 0 && num_b === 0) {
+                            display_a = Math.floor(Math.random() * 10) + 1;
                         }
-                        text = `${a} × ? = ${result}`;
-                    } else { // Brakuje wyniku
-                        answer = result;
-                        text = `${a} × ${b} = ?`;
+                        current_result = display_a * num_b;
+                        answer = num_b;
+                        text = `${display_a} × ? = ${current_result}`;
+                    } else {
+                        current_result = num_a * num_b;
+                        answer = current_result;
+                        text = `${num_a} × ${num_b} = ?`;
                     }
                     break;
-
                 case "div":
-                    // Dzielenie - wynik całkowity, małe liczby
-                    b = Math.floor(Math.random() * 10) + 1; // Dzielnik (b) od 1 do 10
-                    result = Math.floor(Math.random() * 11); // Wynik (iloraz) od 0 do 10
-                    a = b * result; // Dzielna (a)
-
-                    if (missing && Math.random() < 0.5) { // Brakuje dzielnika (b)
-                        answer = b;
-                        text = `${a} ÷ ? = ${result}`;
-                    } else if (missing) { // Brakuje dzielnej (a)
-                        answer = a;
-                        text = `? ÷ ${b} = ${result}`;
-                    } else { // Brakuje wyniku (ilorazu)
-                        answer = result;
-                        text = `${a} ÷ ${b} = ?`;
-                    }
+                    b = Math.floor(Math.random() * 10) + 1;
+                    result = Math.floor(Math.random() * 11);
+                    a = b * result;
+                    if (missing && Math.random() < 0.5) { answer = b; text = `${a} ÷ ? = ${result}`; }
+                    else if (missing) { answer = a; text = `? ÷ ${b} = ${result}`; }
+                    else { answer = result; text = `${a} ÷ ${b} = ?`; }
                     break;
             }
-
-            // Zapewnienie, że tekst pytania nie jest pusty (na wszelki wypadek)
             if (!text) {
-                console.error("Wygenerowano puste pytanie dla:", {op, missing, a, b, result, max, min});
-                // Awaryjne pytanie
+                console.error("Wygenerowano puste pytanie dla:", {op, missing, a, b, result, max, min, num_a, num_b});
                 a = 1; b = 1; result = a + b; op = 'add'; missing = false;
                 text = `${a} + ${b} = ?`;
                 answer = result;
             }
-
-
-            return { text, answer }; // Zwrócenie tekstu pytania i odpowiedzi
+            return { text, answer };
         }
 
-        /**
-         * Sprawdza odpowiedzi użytkownika, oznacza poprawne/błędne i wyświetla wynik.
-         */
         function checkTest() {
-            clearInterval(timerInterval); // Zatrzymanie timera
-            checkButton.disabled = true; // Wyłączenie przycisku sprawdzania
+            clearInterval(timerInterval);
+            if(checkButton) checkButton.disabled = true;
 
-            let correct = 0; // Licznik poprawnych odpowiedzi
-            const inputs = form.querySelectorAll("input[type=number]"); // Pobranie wszystkich pól input
-
+            let correct = 0;
+            const inputs = form.querySelectorAll("input[type=number]");
             inputs.forEach(input => {
                 const userAnswerStr = input.value;
                 const correctAnswer = parseInt(input.dataset.answer);
-                const correctionEl = input.nextElementSibling; // Span dla korekty
-
-                input.disabled = true; // Wyłączenie pola po sprawdzeniu
-
-                // Sprawdzenie, czy odpowiedź jest liczbą i czy jest poprawna
+                const correctionEl = input.nextElementSibling;
+                input.disabled = true;
                 let isCorrect = false;
                 if (userAnswerStr !== "" && !isNaN(parseInt(userAnswerStr))) {
                     if (parseInt(userAnswerStr) === correctAnswer) {
                         isCorrect = true;
                     }
                 }
-
                 if (isCorrect) {
                     correct++;
                     input.classList.remove('border-gray-300', 'border-incorrect');
-                    input.classList.add('border-correct', 'border-2'); // Zielona ramka
-                    correctionEl.style.display = "none"; // Ukryj korektę
+                    input.classList.add('border-correct', 'border-2');
+                    if(correctionEl) correctionEl.style.display = "none";
                 } else {
                     input.classList.remove('border-gray-300', 'border-correct');
-                    input.classList.add('border-incorrect', 'border-2'); // Czerwona ramka
-                    correctionEl.style.display = "inline"; // Pokaż korektę
-                    if (userAnswerStr === "") {
-                         correctionEl.textContent = `Brak odp. (${correctAnswer})`;
-                    } else {
-                         correctionEl.textContent = `Poprawna: ${correctAnswer}`;
+                    input.classList.add('border-incorrect', 'border-2');
+                    if(correctionEl) {
+                        correctionEl.style.display = "inline";
+                        if (userAnswerStr === "") {
+                             correctionEl.textContent = `Brak odp. (${correctAnswer})`;
+                        } else {
+                             correctionEl.textContent = `Poprawna: ${correctAnswer}`;
+                        }
                     }
                 }
             });
 
-            // Obliczenie procentu i oceny
             const totalQuestions = inputs.length;
             const percent = totalQuestions > 0 ? (correct / totalQuestions) * 100 : 0;
             let grade;
-
-            // Ustalenie oceny
             if (percent >= 95) grade = 6;
             else if (percent >= 85) grade = 5;
             else if (percent >= 70) grade = 4;
             else if (percent >= 55) grade = 3;
-            else if (percent >= 45) grade = 2;
+            else if (percent >= 40) grade = 2;
             else grade = 1;
 
-            // Wyświetlenie wyniku końcowego w prawym panelu
             resultDiv.innerHTML = `
                 <h2 class="text-xl font-bold mb-2">Wynik Testu</h2>
                 <p>Poprawnych odpowiedzi: <strong class="text-correct">${correct}</strong>/${totalQuestions}</p>
@@ -362,12 +366,16 @@
             `;
         }
 
-        // Dodanie nasłuchiwaczy zdarzeń do przycisków
-        generateButton.addEventListener('click', generateTest);
-        checkButton.addEventListener('click', checkTest);
+        // Inicjalizacja stanu timera i przycisków
+        timerToggle.checked = isTimerEnabled; // Ustaw checkbox zgodnie z domyślnym stanem
+        if (!isTimerEnabled) {
+            timerValueEl.textContent = "⏱ Wyłączony";
+        }
+        updateTimerSetButtonsUI(); // Ustaw podświetlenie domyślnego przycisku czasu
 
-        // Opcjonalnie: Wygeneruj test od razu po załadowaniu strony
-        // generateTest();
+        // Nasłuchiwacze zdarzeń
+        generateButton.addEventListener('click', generateTest);
+        if(checkButton) checkButton.addEventListener('click', checkTest);
 
     </script>
 
